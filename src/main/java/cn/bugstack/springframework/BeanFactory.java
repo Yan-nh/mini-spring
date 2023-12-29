@@ -1,17 +1,16 @@
 package cn.bugstack.springframework;
 
+import cn.bugstack.springframework.beans.BeansException;
+import cn.bugstack.springframework.beans.factory.config.BeanDefinition;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class BeanFactory {
+/**
+ * Bean简单工厂
+ */
+public interface BeanFactory {
 
-    private Map<String, BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<String, BeanDefinition>();
+    Object getBean(String name) throws BeansException;
 
-    public Object getBean(String name){
-        return beanDefinitionMap.get(name).getBean();
-    }
-
-    public void registerBeanDefinition(String name, BeanDefinition beanDefinition){
-        beanDefinitionMap.put(name, beanDefinition);
-    }
 }
