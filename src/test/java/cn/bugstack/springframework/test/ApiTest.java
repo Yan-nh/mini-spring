@@ -6,22 +6,32 @@ import cn.bugstack.springframework.beans.factory.support.DefaultListableBeanFact
 import cn.bugstack.springframework.test.bean.UserService;
 import org.junit.Test;
 
+import java.lang.reflect.Constructor;
+
 public class ApiTest {
 
     @Test
     public void test_BeanFactory(){
         // 1.初始化 BeanFactory
         DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
-        // 2.注册 bean
+
+        // 2. 注入bean
         BeanDefinition beanDefinition = new BeanDefinition(UserService.class);
         beanFactory.registerBeanDefinition("userService", beanDefinition);
-        // 3.第一次获取 bean
-        UserService userService = (UserService) beanFactory.getBean("userService");
+
+        // 3.获取bean
+        UserService userService = (UserService) beanFactory.getBean("userService", "小傅哥");
         userService.queryUserInfo();
-        // 4.第二次获取 bean from Singleton
-        UserService userService_singleton = (UserService) beanFactory.getBean("userService");
-        userService_singleton.queryUserInfo();
     }
 
+    @Test
+    public void test_parameterTypes() throws Exception {
+        Class<UserService> beanClass = UserService.class;
+        Constructor<?>[] declaredConstructors = beanClass.getDeclaredConstructors();
+        Constructor<?> constructor = declaredConstructors[0];
+        Constructor<UserService> declaredConstructor = beanClass.getDeclaredConstructor(constructor.getParameterTypes());
+        UserService userService = declaredConstructor.newInstance("小傅哥");
+        System.out.println(userService);
+    }
 
 }
