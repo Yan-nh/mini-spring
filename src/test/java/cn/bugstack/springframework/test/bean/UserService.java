@@ -6,9 +6,11 @@ public class UserService {
 
     private UserDao userDao;
 
-    public void queryUserInfo() {
-        System.out.println("查询用户信息：" + userDao.queryUserName(uId));
+    public String queryUserInfo() {
+        return userDao.queryUserName(uId);
     }
+
+    // ...get/set
 
     public String getuId() {
         return uId;
@@ -26,3 +28,4 @@ public class UserService {
         this.userDao = userDao;
     }
 }
+
