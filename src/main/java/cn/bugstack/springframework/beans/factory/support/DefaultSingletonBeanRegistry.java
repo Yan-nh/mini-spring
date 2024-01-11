@@ -5,26 +5,32 @@ import cn.bugstack.springframework.beans.factory.DisposableBean;
 import cn.bugstack.springframework.beans.factory.config.SingletonBeanRegistry;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 定义了一个获取单例对象的接口
  */
 public class DefaultSingletonBeanRegistry implements SingletonBeanRegistry {
 
+    /**
+     * Internal marker for a null singleton object:
+     * used as marker value for concurrent Maps (which don't support null values).
+     */
     protected static final Object NULL_OBJECT = new Object();
 
-    private Map<String, Object> singletonObjects = new HashMap<>();
+    private Map<String, Object> singletonObjects = new ConcurrentHashMap<>();
 
-    private final Map<String, DisposableBean> disposableBeans = new HashMap<>();
+    private final Map<String, DisposableBean> disposableBeans = new LinkedHashMap<>();
 
     @Override
     public Object getSingleton(String beanName) {
         return singletonObjects.get(beanName);
     }
 
-    protected void addSingleton(String beanName, Object singletonObject) {
+    public void registerSingleton(String beanName, Object singletonObject) {
         singletonObjects.put(beanName, singletonObject);
     }
 
