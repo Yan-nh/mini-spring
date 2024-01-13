@@ -1,5 +1,10 @@
 package cn.bugstack.springframework.test;
 
+import cn.bugstack.springframework.aop.AdvisedSupport;
+import cn.bugstack.springframework.aop.TargetSource;
+import cn.bugstack.springframework.aop.aspectj.AspectJExpressionPointcut;
+import cn.bugstack.springframework.aop.framework.Cglib2AopProxy;
+import cn.bugstack.springframework.aop.framework.JdkDynamicAopProxy;
 import cn.bugstack.springframework.beans.PropertyValue;
 import cn.bugstack.springframework.beans.PropertyValues;
 import cn.bugstack.springframework.beans.factory.config.BeanDefinition;
@@ -9,8 +14,10 @@ import cn.bugstack.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import cn.bugstack.springframework.context.support.ClassPathXmlApplicationContext;
 import cn.bugstack.springframework.core.io.DefaultResourceLoader;
 import cn.bugstack.springframework.core.io.Resource;
+import cn.bugstack.springframework.test.bean.IUserService;
 import cn.bugstack.springframework.test.bean.UserDao;
 import cn.bugstack.springframework.test.bean.UserService;
+import cn.bugstack.springframework.test.bean.UserServiceInterceptor;
 import cn.bugstack.springframework.test.event.CustomEvent;
 import cn.hutool.core.io.IoUtil;
 import org.junit.Before;
@@ -20,60 +27,48 @@ import org.openjdk.jol.info.ClassLayout;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 
 public class ApiTest {
 
+    /**
+     * 这里单独提供出来一个匹配方法的验证测试，可以看看你拦截的方法与对应的对象是否匹配
+     * @throws NoSuchMethodException
+     */
     @Test
-    public void test_xml() {
-        // 1.初始化 BeanFactory
-        ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:spring.xml");
-        applicationContext.registerShutdownHook();
+    public void test_aop() throws NoSuchMethodException {
+        AspectJExpressionPointcut pointcut = new AspectJExpressionPointcut("execution(* cn.bugstack.springframework.test.bean.UserService.*(..))");
+        Class<UserService> clazz = UserService.class;
+        Method method = clazz.getDeclaredMethod("queryUserInfo");
 
-        // 2. 获取Bean对象调用方法
-        UserService userService = applicationContext.getBean("userService", UserService.class);
-        String result = userService.queryUserInfo();
-        System.out.println("测试结果：" + result);
-        System.out.println("ApplicationContextAware："+userService.getApplicationContext());
-        System.out.println("BeanFactoryAware："+userService.getBeanFactory());
+        System.out.println(pointcut.matches(clazz));
+        System.out.println(pointcut.matches(method, clazz));
+
+        // true、true
     }
 
     @Test
-    public void test_prototype() {
-        // 1.初始化 BeanFactory
-        ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:spring.xml");
-        applicationContext.registerShutdownHook();
+    public void test_dynamic() {
+        // 目标对象
+        IUserService userService = new UserService();
 
-        // 2. 获取Bean对象调用方法
-        UserService userService01 = applicationContext.getBean("userService", UserService.class);
-        UserService userService02 = applicationContext.getBean("userService", UserService.class);
+        // 组装代理信息
+        AdvisedSupport advisedSupport = new AdvisedSupport();
+        advisedSupport.setTargetSource(new TargetSource(userService));
+        advisedSupport.setMethodInterceptor(new UserServiceInterceptor());
+        advisedSupport.setMethodMatcher(new AspectJExpressionPointcut("execution(* cn.bugstack.springframework.test.bean.IUserService.*(..))"));
+        //advisedSupport.setMethodMatcher(new AspectJExpressionPointcut("execution(* cn.bugstack.springframework.test.bean.IUserService.queryUserInfo())"));
 
-        // 3. 配置 scope="prototype/singleton"
-        System.out.println(userService01);
-        System.out.println(userService02);
+        // 代理对象(JdkDynamicAopProxy)
+        IUserService proxy_jdk = (IUserService) new JdkDynamicAopProxy(advisedSupport).getProxy();
+        // 测试调用
+        System.out.println("测试结果：" + proxy_jdk.queryUserInfo());
+        //System.out.println("测试结果：" + proxy_jdk.register("1"));
 
-        // 4. 打印十六进制哈希
-        System.out.println(userService01 + " 十六进制哈希：" + Integer.toHexString(userService01.hashCode()));
-        System.out.println(ClassLayout.parseInstance(userService01).toPrintable());
-
-    }
-
-    @Test
-    public void test_factory_bean() {
-        // 1.初始化 BeanFactory
-        ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:spring.xml");
-        applicationContext.registerShutdownHook();
-
-        // 2. 调用代理方法
-        UserService userService = applicationContext.getBean("userService", UserService.class);
-        System.out.println("测试结果：" + userService.queryUserInfo());
-    }
-
-    @Test
-    public void test_event() {
-        ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:spring.xml");
-        applicationContext.publishEvent(new CustomEvent(applicationContext, 1019129009086763L, "成功了！"));
-
-        applicationContext.registerShutdownHook();
+        // 代理对象(Cglib2AopProxy)
+        IUserService proxy_cglib = (IUserService) new Cglib2AopProxy(advisedSupport).getProxy();
+        // 测试调用
+        System.out.println("测试结果：" + proxy_cglib.register("花花"));
     }
 
 
