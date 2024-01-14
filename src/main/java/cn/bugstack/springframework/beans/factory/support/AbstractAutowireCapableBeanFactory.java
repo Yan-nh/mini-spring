@@ -4,10 +4,8 @@ import cn.bugstack.springframework.beans.BeansException;
 import cn.bugstack.springframework.beans.PropertyValue;
 import cn.bugstack.springframework.beans.PropertyValues;
 import cn.bugstack.springframework.beans.factory.*;
-import cn.bugstack.springframework.beans.factory.config.AutowireCapableBeanFactory;
-import cn.bugstack.springframework.beans.factory.config.BeanDefinition;
-import cn.bugstack.springframework.beans.factory.config.BeanPostProcessor;
-import cn.bugstack.springframework.beans.factory.config.BeanReference;
+import cn.bugstack.springframework.beans.factory.config.*;
+import cn.bugstack.springframework.context.ApplicationContextAware;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 
@@ -15,7 +13,17 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 
 /**
- * 实例化 Bean 的类
+ * Abstract bean factory superclass that implements default bean creation,
+ * with the full capabilities specified by the class.
+ * Implements the {@link cn.bugstack.springframework.beans.factory.config.AutowireCapableBeanFactory}
+ * interface in addition to AbstractBeanFactory's {@link #createBean} method.
+ * <p>
+ *
+ *
+ *
+ *
+ *
+ * 作者：DerekYRC https://github.com/DerekYRC/mini-spring
  */
 public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFactory implements AutowireCapableBeanFactory {
 
@@ -25,28 +33,49 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
     protected Object createBean(String beanName, BeanDefinition beanDefinition, Object[] args) throws BeansException {
         Object bean = null;
         try {
+            // 判断是否返回代理 Bean 对象
+            bean = resolveBeforeInstantiation(beanName, beanDefinition);
+            if (null != bean) {
+                return bean;
+            }
+            // 实例化 Bean
             bean = createBeanInstance(beanDefinition, beanName, args);
             // 给 Bean 填充属性
             applyPropertyValues(beanName, bean, beanDefinition);
             // 执行 Bean 的初始化方法和 BeanPostProcessor 的前置和后置处理方法
-            // 注意这里是初始化 不是实例化 前面已经实例化和依赖注入了
             bean = initializeBean(beanName, bean, beanDefinition);
         } catch (Exception e) {
             throw new BeansException("Instantiation of bean failed", e);
         }
 
-        // 注册实现了 DisposableBean 接口或者xml定义了destroy的 Bean 对象
+        // 注册实现了 DisposableBean 接口的 Bean 对象
         registerDisposableBeanIfNecessary(beanName, bean, beanDefinition);
 
         // 判断 SCOPE_SINGLETON、SCOPE_PROTOTYPE
-        // 单例模式和原型模式的区别就在于是否存放到内存中，如果是原型模式那么就不会存放到内存中，每次获取都重新创建对象
         if (beanDefinition.isSingleton()) {
             registerSingleton(beanName, bean);
         }
         return bean;
     }
 
-    // 根据是接口类型和配置类型统一交给 DisposableBeanAdapter 销毁适配器类来做统一处理
+    protected Object resolveBeforeInstantiation(String beanName, BeanDefinition beanDefinition) {
+        Object bean = applyBeanPostProcessorsBeforeInstantiation(beanDefinition.getBeanClass(), beanName);
+        if (null != bean) {
+            bean = applyBeanPostProcessorsAfterInitialization(bean, beanName);
+        }
+        return bean;
+    }
+
+    protected Object applyBeanPostProcessorsBeforeInstantiation(Class<?> beanClass, String beanName) {
+        for (BeanPostProcessor beanPostProcessor : getBeanPostProcessors()) {
+            if (beanPostProcessor instanceof InstantiationAwareBeanPostProcessor) {
+                Object result = ((InstantiationAwareBeanPostProcessor) beanPostProcessor).postProcessBeforeInstantiation(beanClass, beanName);
+                if (null != result) return result;
+            }
+        }
+        return null;
+    }
+
     protected void registerDisposableBeanIfNecessary(String beanName, Object bean, BeanDefinition beanDefinition) {
         // 非 Singleton 类型的 Bean 不执行销毁方法
         if (!beanDefinition.isSingleton()) return;
@@ -108,7 +137,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
             if (bean instanceof BeanFactoryAware) {
                 ((BeanFactoryAware) bean).setBeanFactory(this);
             }
-            if (bean instanceof BeanClassLoaderAware){
+            if (bean instanceof BeanClassLoaderAware) {
                 ((BeanClassLoaderAware) bean).setBeanClassLoader(getBeanClassLoader());
             }
             if (bean instanceof BeanNameAware) {
@@ -127,18 +156,17 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
         }
 
         // 2. 执行 BeanPostProcessor After 处理
-        wrappedBean = applyBeanPostProcessorsAfterInitialization(bean, beanName);
+        wrappedBean = applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName);
         return wrappedBean;
     }
 
     private void invokeInitMethods(String beanName, Object bean, BeanDefinition beanDefinition) throws Exception {
-        // 两种方法
         // 1. 实现接口 InitializingBean
         if (bean instanceof InitializingBean) {
             ((InitializingBean) bean).afterPropertiesSet();
         }
 
-        // 2. 配置信息 init-method {判断是为了避免二次执行销毁}
+        // 2. 注解配置 init-method {判断是为了避免二次执行销毁}
         String initMethodName = beanDefinition.getInitMethodName();
         if (StrUtil.isNotEmpty(initMethodName)) {
             Method initMethod = beanDefinition.getBeanClass().getMethod(initMethodName);

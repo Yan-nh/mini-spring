@@ -3,9 +3,21 @@ package cn.bugstack.springframework.aop;
 import org.aopalliance.intercept.MethodInterceptor;
 
 /**
- * AdvisedSupport，主要是用于把代理、拦截、匹配的各项属性包装到一个类中，方便在 Proxy 实现类进行使用
+ * Base class for AOP proxy configuration managers.
+ * These are not themselves AOP proxies, but subclasses of this class are
+ * normally factories from which AOP proxy instances are obtained directly.
+ * <p>
+ *
+ *
+ *
+ *
+ *
+ * 作者：DerekYRC https://github.com/DerekYRC/mini-spring
  */
 public class AdvisedSupport {
+
+    // ProxyConfig
+    private boolean proxyTargetClass = false;
 
     // 被代理的目标对象
     private TargetSource targetSource;
@@ -14,7 +26,13 @@ public class AdvisedSupport {
     // 方法匹配器(检查目标方法是否符合通知条件)
     private MethodMatcher methodMatcher;
 
-    // ...get/set
+    public boolean isProxyTargetClass() {
+        return proxyTargetClass;
+    }
+
+    public void setProxyTargetClass(boolean proxyTargetClass) {
+        this.proxyTargetClass = proxyTargetClass;
+    }
 
     public TargetSource getTargetSource() {
         return targetSource;
@@ -40,4 +58,3 @@ public class AdvisedSupport {
         this.methodMatcher = methodMatcher;
     }
 }
-
