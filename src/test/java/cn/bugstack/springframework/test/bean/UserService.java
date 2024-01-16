@@ -1,11 +1,16 @@
 package cn.bugstack.springframework.test.bean;
 
+import cn.bugstack.springframework.stereotype.Component;
+
 import java.util.Random;
 
 /**
  * 作者：DerekYRC https://github.com/DerekYRC/mini-spring
  */
+@Component("userService")
 public class UserService implements IUserService {
+
+    private String token;
 
     public String queryUserInfo() {
         try {
@@ -25,4 +30,16 @@ public class UserService implements IUserService {
         return "注册用户：" + userName + " success！";
     }
 
+    @Override
+    public String toString() {
+        return "UserService#token = { " + token + " }";
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
 }
