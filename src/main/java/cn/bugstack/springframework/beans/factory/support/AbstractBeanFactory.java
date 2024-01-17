@@ -7,25 +7,32 @@ import cn.bugstack.springframework.beans.factory.config.BeanDefinition;
 import cn.bugstack.springframework.beans.factory.config.BeanPostProcessor;
 import cn.bugstack.springframework.beans.factory.config.ConfigurableBeanFactory;
 import cn.bugstack.springframework.utils.ClassUtils;
+import cn.bugstack.springframework.utils.StringValueResolver;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 抽象类定义模板方法
+ * 作者：DerekYRC https://github.com/DerekYRC/mini-spring
+ * <p>
+ * BeanDefinition注册表接口
  */
-public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport  implements ConfigurableBeanFactory {
+public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport implements ConfigurableBeanFactory {
 
-    /** BeanPostProcessors to apply in createBean */
-    private final List<BeanPostProcessor> beanPostProcessors = new ArrayList<BeanPostProcessor>();
     /**
      * ClassLoader to resolve bean class names with, if necessary
      */
     private ClassLoader beanClassLoader = ClassUtils.getDefaultClassLoader();
 
-    public ClassLoader getBeanClassLoader() {
-        return this.beanClassLoader;
-    }
+    /**
+     * BeanPostProcessors to apply in createBean
+     */
+    private final List<BeanPostProcessor> beanPostProcessors = new ArrayList<BeanPostProcessor>();
+
+    /**
+     * String resolvers to apply e.g. to annotation attribute values
+     */
+    private final List<StringValueResolver> embeddedValueResolvers = new ArrayList<>();
 
     @Override
     public Object getBean(String name) throws BeansException {
@@ -74,9 +81,23 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport  im
     protected abstract Object createBean(String beanName, BeanDefinition beanDefinition, Object[] args) throws BeansException;
 
     @Override
-    public void addBeanPostProcessor(BeanPostProcessor beanPostProcessor){
+    public void addBeanPostProcessor(BeanPostProcessor beanPostProcessor) {
         this.beanPostProcessors.remove(beanPostProcessor);
         this.beanPostProcessors.add(beanPostProcessor);
+    }
+
+    @Override
+    public void addEmbeddedValueResolver(StringValueResolver valueResolver) {
+        this.embeddedValueResolvers.add(valueResolver);
+    }
+
+    @Override
+    public String resolveEmbeddedValue(String value) {
+        String result = value;
+        for (StringValueResolver resolver : this.embeddedValueResolvers) {
+            result = resolver.resolveStringValue(result);
+        }
+        return result;
     }
 
     /**
@@ -85,6 +106,10 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport  im
      */
     public List<BeanPostProcessor> getBeanPostProcessors() {
         return this.beanPostProcessors;
+    }
+
+    public ClassLoader getBeanClassLoader() {
+        return this.beanClassLoader;
     }
 
 }
