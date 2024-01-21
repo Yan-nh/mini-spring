@@ -22,7 +22,7 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
      * The returned bean object may be a proxy to use instead of the target bean,
      * effectively suppressing default instantiation of the target bean.
      * <p>
-     * 在 Bean 对象执行实例化方法之前，执行此方法
+     * 在 Bean 对象执行初始化方法之前，执行此方法
      *
      * @param beanClass
      * @param beanName
@@ -38,7 +38,7 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
      * See Spring's own {@link cn.bugstack.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor}
      * for a typical example.
      * <p>
-     * 在 Bean 对象执行实例化方法之后，执行此方法
+     * 在 Bean 对象执行初始化方法之后，执行此方法
      *
      * @param bean
      * @param beanName
@@ -61,5 +61,15 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
      * @throws BeansException
      */
     PropertyValues postProcessPropertyValues(PropertyValues pvs, Object bean, String beanName) throws BeansException;
+
+    /**
+     * 在 Spring 中由 SmartInstantiationAwareBeanPostProcessor#getEarlyBeanReference 提供
+     * @param bean
+     * @param beanName
+     * @return
+     */
+    default Object getEarlyBeanReference(Object bean, String beanName) {
+        return bean;
+    }
 
 }

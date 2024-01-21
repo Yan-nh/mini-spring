@@ -1,12 +1,23 @@
 package cn.bugstack.springframework.aop.framework;
 
 import cn.bugstack.springframework.aop.AdvisedSupport;
+import cn.bugstack.springframework.utils.ClassUtils;
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
 
 import java.lang.reflect.Method;
 
+/**
+ * CGLIB2-based {@link AopProxy} implementation for the Spring AOP framework.
+ *
+ * <p><i>Requires CGLIB 2.1+ on the classpath.</i>.
+ * As of Spring 2.0, earlier CGLIB versions are not supported anymore.
+ *
+ * <p>Objects of this type should be obtained through proxy factories,
+ * configured by an AdvisedSupport object. This class is internal
+ * to Spring's AOP framework and need not be used directly by client code.
+ */
 public class Cglib2AopProxy implements AopProxy {
 
     private final AdvisedSupport advised;
@@ -15,22 +26,17 @@ public class Cglib2AopProxy implements AopProxy {
         this.advised = advised;
     }
 
-    /**
-     * 好比jdk的proxy的newInstance
-     * @return
-     */
     @Override
     public Object getProxy() {
         Enhancer enhancer = new Enhancer();
-        enhancer.setSuperclass(advised.getTargetSource().getTarget().getClass());
+        Class<?> aClass = advised.getTargetSource().getTarget().getClass();
+        aClass = ClassUtils.isCglibProxyClass(aClass)? aClass.getSuperclass():aClass;
+        enhancer.setSuperclass(aClass);
         enhancer.setInterfaces(advised.getTargetSource().getTargetClass());
         enhancer.setCallback(new DynamicAdvisedInterceptor(advised));
         return enhancer.create();
     }
 
-    /**
-     * 好比jdk的InvocationHandler
-     */
     private static class DynamicAdvisedInterceptor implements MethodInterceptor {
 
         private final AdvisedSupport advised;
@@ -39,7 +45,6 @@ public class Cglib2AopProxy implements AopProxy {
             this.advised = advised;
         }
 
-        //jdk的InvocationHandler的invoke
         @Override
         public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy) throws Throwable {
             CglibMethodInvocation methodInvocation = new CglibMethodInvocation(advised.getTargetSource().getTarget(), method, objects, methodProxy);
@@ -50,7 +55,6 @@ public class Cglib2AopProxy implements AopProxy {
         }
     }
 
-    // 这里只是cglib和jdk不一样，对ReflectiveMethodInvocation又包装了下
     private static class CglibMethodInvocation extends ReflectiveMethodInvocation {
 
         private final MethodProxy methodProxy;
@@ -68,4 +72,3 @@ public class Cglib2AopProxy implements AopProxy {
     }
 
 }
-
