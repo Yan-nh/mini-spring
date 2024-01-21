@@ -48,7 +48,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
             // 实例化 Bean
             bean = createBeanInstance(beanDefinition, beanName, args);
 
-            // 处理循环依赖，将实例化后的Bean对象提前放入缓存中暴露出来
+            // 处理循环依赖，将实例化后的Bean对象提前放入缓存中暴露出来, 放到三级缓存
             if (beanDefinition.isSingleton()) {
                 Object finalBean = bean;
                 addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, beanDefinition, finalBean));
@@ -76,8 +76,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
         Object exposedObject = bean;
         if (beanDefinition.isSingleton()) {
             // 获取代理对象
-            exposedObject = getSingleton(beanName);
-            registerSingleton(beanName, exposedObject);
+            exposedObject = getSingleton(beanName); // 三级放到二级
+            registerSingleton(beanName, exposedObject); // 二级放到一级
         }
         return exposedObject;
 

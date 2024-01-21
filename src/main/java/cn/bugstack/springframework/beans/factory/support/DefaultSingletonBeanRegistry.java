@@ -47,12 +47,13 @@ public class DefaultSingletonBeanRegistry implements SingletonBeanRegistry {
         Object singletonObject = singletonObjects.get(beanName);
         if (null == singletonObject) {
             singletonObject = earlySingletonObjects.get(beanName);
-            // 判断二级缓存中是否有对象，如果为空，这个对象就是代理对象，因为只有代理对象才会放到三级缓存中
+            // 判断二级缓存中是否有对象，如果为空，则去第三级缓存找
             if (null == singletonObject) {
                 ObjectFactory<?> singletonFactory = singletonFactories.get(beanName);
                 if (singletonFactory != null) {
+                    // 获取已经实例化后的对象，如果是代理则返回代理对象，所以三级缓存就是为了保证：不管代不代理使⽤的都是⼀个对象
                     singletonObject = singletonFactory.getObject();
-                    // 把三级缓存中的代理对象中的真实对象获取出来，放入二级缓存中
+                    // 放入二级缓存中，删除三级缓存
                     earlySingletonObjects.put(beanName, singletonObject);
                     singletonFactories.remove(beanName);
                 }
