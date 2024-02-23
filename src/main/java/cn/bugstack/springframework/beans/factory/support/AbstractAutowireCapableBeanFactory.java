@@ -29,11 +29,16 @@ import java.lang.reflect.Method;
  */
 public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFactory implements AutowireCapableBeanFactory {
 
+    /**
+     *     源码是CglibSubclassingInstantiationStrategy继承simpleInstantiationStrategy，
+     *     在simpleInstantiationStrategy里若方法覆盖MethodOverrides，则调用Cglib，无覆盖则直接反射(JDK)、注意这不是动态代理
+     *     有没有参数都可以用构造器反射:调用Constructor对象的newInstance()方法，传入构造函数所需的参数值来创建对象实例
+     */
     private InstantiationStrategy instantiationStrategy = new CglibSubclassingInstantiationStrategy();
 
     @Override
     protected Object createBean(String beanName, BeanDefinition beanDefinition, Object[] args) throws BeansException {
-        // 判断是否返回代理 Bean 对象
+        // 判断是否返回代理 Bean 对象，实际的项目启动过程中，不存在需要在预处理阶段生成代理对象的场景
         Object bean = resolveBeforeInstantiation(beanName, beanDefinition);
         if (null != bean) {
             return bean;
@@ -54,22 +59,25 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
                 addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, beanDefinition, finalBean));
             }
 
+            //------populateBean-------
             // 实例化后判断
             boolean continueWithPropertyPopulation = applyBeanPostProcessorsAfterInstantiation(beanName, bean);
             if (!continueWithPropertyPopulation) {
                 return bean;
             }
-            // 在设置 Bean 属性之前，允许 BeanPostProcessor 修改属性值
+            // 在设置 Bean 属性之前，允许 BeanPostProcessor 修改属性值，有@Value、@Autowired注解的直接注入
             applyBeanPostProcessorsBeforeApplyingPropertyValues(beanName, bean, beanDefinition);
             // 给 Bean 填充属性
             applyPropertyValues(beanName, bean, beanDefinition);
-            // 执行 Bean 的初始化方法和 BeanPostProcessor 的前置和后置处理方法
+            //------populateBean-------
+
+            // 执行 Bean 的初始化方法和 BeanPostProcessor 的前置和后置处理方法，如果代理，后置处理生成代理对象
             bean = initializeBean(beanName, bean, beanDefinition);
         } catch (Exception e) {
             throw new BeansException("Instantiation of bean failed" + e);
         }
 
-        // 注册实现了 DisposableBean 接口的 Bean 对象
+        // 注册实现了 DisposableBean 接口的 Bean 对象, 也就是DisposableBeanAdapter适配器类
         registerDisposableBeanIfNecessary(beanName, bean, beanDefinition);
 
         // 判断 SCOPE_SINGLETON、SCOPE_PROTOTYPE
@@ -173,6 +181,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
                 break;
             }
         }
+        // 实例化策略SimpleInstantiationStrategy 和 CglibSubclassingInstantiationStrategy，这里选的Cglib
         return getInstantiationStrategy().instantiate(beanDefinition, beanName, constructorToUse, args);
     }
 
@@ -254,6 +263,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
             }
             initMethod.invoke(bean);
         }
+        // 以上两种方法二选一
     }
 
     @Override

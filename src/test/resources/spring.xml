@@ -18,12 +18,14 @@
     <!-- AOP 配置，验证三级缓存 -->
     <bean class="cn.bugstack.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator"/>
 
+    <!-- 下面这两个可以合二为一 在Spirng注解使用中就是@Before -->
     <bean id="beforeAdvice" class="cn.bugstack.springframework.test.bean.SpouseAdvice"/>
 
     <bean id="methodInterceptor" class="cn.bugstack.springframework.aop.framework.adapter.MethodBeforeAdviceInterceptor">
         <property name="advice" ref="beforeAdvice"/>
     </bean>
 
+    <!-- 在Spirng注解使用中就是@PointCut("execution(* cn.bugstack.springframework.test.bean.Wife.*(..))") -->
     <bean id="pointcutAdvisor" class="cn.bugstack.springframework.aop.aspectj.AspectJExpressionPointcutAdvisor">
         <property name="expression" value="execution(* cn.bugstack.springframework.test.bean.Wife.*(..))"/>
         <property name="advice" ref="methodInterceptor"/>

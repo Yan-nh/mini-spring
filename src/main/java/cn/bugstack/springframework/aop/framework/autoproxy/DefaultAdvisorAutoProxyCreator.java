@@ -84,6 +84,7 @@ public class DefaultAdvisorAutoProxyCreator implements InstantiationAwareBeanPos
             advisedSupport.setTargetSource(targetSource);
             advisedSupport.setMethodInterceptor((MethodInterceptor) advisor.getAdvice());
             advisedSupport.setMethodMatcher(advisor.getPointcut().getMethodMatcher());
+            //wife没有实现接口，所以用cglib，一般来说是有自动判断是否实现接口来选择jdk和cglib的，但这里没实现，采用的是硬编码
             advisedSupport.setProxyTargetClass(true);
 
             // 返回代理对象
