@@ -61,6 +61,7 @@ public class DefaultAdvisorAutoProxyCreator implements InstantiationAwareBeanPos
 
     @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+        // 这里的判断是前面循环依赖时候已经生成了代理对象了，如果存在则不要再生成了
         if (!earlyProxyReferences.contains(beanName)) {
             return wrapIfNecessary(bean, beanName);
         }
@@ -96,7 +97,9 @@ public class DefaultAdvisorAutoProxyCreator implements InstantiationAwareBeanPos
 
     @Override
     public Object getEarlyBeanReference(Object bean, String beanName) {
+        //注意earlyProxyReferences存放的是原来的bean，而不是代理过后的bean
         earlyProxyReferences.add(beanName);
+        //生成代理对象并返回
         return wrapIfNecessary(bean, beanName);
     }
 

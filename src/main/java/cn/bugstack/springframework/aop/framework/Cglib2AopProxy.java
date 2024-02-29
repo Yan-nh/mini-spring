@@ -55,6 +55,7 @@ public class Cglib2AopProxy implements AopProxy {
         }
     }
 
+    //内部类，做了个封装
     private static class CglibMethodInvocation extends ReflectiveMethodInvocation {
 
         private final MethodProxy methodProxy;

@@ -25,7 +25,7 @@
         <property name="advice" ref="beforeAdvice"/>
     </bean>
 
-    <!-- 在Spirng注解使用中就是@PointCut("execution(* cn.bugstack.springframework.test.bean.Wife.*(..))") -->
+    <!-- 在Spring注解使用中就是@PointCut("execution(* cn.bugstack.springframework.test.bean.Wife.*(..))") -->
     <bean id="pointcutAdvisor" class="cn.bugstack.springframework.aop.aspectj.AspectJExpressionPointcutAdvisor">
         <property name="expression" value="execution(* cn.bugstack.springframework.test.bean.Wife.*(..))"/>
         <property name="advice" ref="methodInterceptor"/>

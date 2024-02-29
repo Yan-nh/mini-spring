@@ -51,7 +51,7 @@ public class DefaultSingletonBeanRegistry implements SingletonBeanRegistry {
             if (null == singletonObject) {
                 ObjectFactory<?> singletonFactory = singletonFactories.get(beanName);
                 if (singletonFactory != null) {
-                    // 获取已经实例化后的对象，如果是代理则返回代理对象，所以三级缓存就是为了保证：不管代不代理使⽤的都是⼀个对象
+                    // 获取已经实例化后的对象，如果是代理则返回代理对象
                     singletonObject = singletonFactory.getObject();
                     // 放入二级缓存中，删除三级缓存
                     earlySingletonObjects.put(beanName, singletonObject);
